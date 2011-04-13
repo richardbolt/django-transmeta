@@ -192,6 +192,21 @@ class TransMeta(models.base.ModelBase):
             for lang in settings.LANGUAGES:
                 lang_code = lang[LANGUAGE_CODE]
                 lang_attr = copy.copy(original_attr)
+                
+                original_attr.set_attributes_from_name(field) # Set the attributes now so we can use the column name later.
+                if type(original_attr) == models.ForeignKey:
+                    blank = (original_attr.blank if lang_code == default_language else False)
+                    null = (original_attr.null if lang_code == default_language else False)
+                    kwargs = {
+                                'verbose_name': lang_attr.verbose_name,
+                                'related_name': '%s_set_%s' % (name.lower(), lang_code),
+                                'limit_choices_to': lang_attr.rel.limit_choices_to,
+                                'parent_link': lang_attr.rel.parent_link,
+                                'blank': blank,
+                                'null': null,
+                                }
+                    lang_attr.__init__(lang_attr.rel.to, to_field=lang_attr.rel.field_name, **kwargs)
+                
                 lang_attr.original_fieldname = field
                 lang_attr_name = get_real_fieldname(field, lang_code)
                 if lang_code != default_language:
@@ -205,7 +220,7 @@ class TransMeta(models.base.ModelBase):
                 attrs[lang_attr_name] = lang_attr
             if field in attrs:
                 del attrs[field]
-            attrs[field] = property(default_value_getter(field), default_value_setter(field))
+            attrs[field] = property(default_value_getter(field), default_value_setter(field), doc=original_attr.column) # Set the column to __doc__ so we can access it later.
 
         default_language_field = None
         if 'Meta' in attrs and hasattr(attrs['Meta'], 'default_language_field'):

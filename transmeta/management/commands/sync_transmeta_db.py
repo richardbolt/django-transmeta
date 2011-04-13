@@ -17,6 +17,14 @@ from django.db.models import get_models
 from transmeta import get_real_fieldname
 
 
+def get_real_columnname(field, model, lang=None):
+    if lang is None:
+       lang = get_language()
+    field_name = get_real_fieldname(field, lang)
+    f = model._meta.get_field(field_name)
+    return f.column
+
+
 def ask_for_default_language():
     print 'Available languages:'
     for i, lang_tuple in enumerate(settings.LANGUAGES):
@@ -107,11 +115,11 @@ class Command(BaseCommand):
         db_table_desc = self.introspection.get_table_description(self.cursor, db_table)
         return [t[0] for t in db_table_desc]
 
-    def get_missing_languages(self, field_name, db_table):
+    def get_missing_languages(self, field_name, db_table, model):
         """ get only missings fields """
         db_table_fields = self.get_table_fields(db_table)
         for lang_code, lang_name in settings.LANGUAGES:
-            if get_real_fieldname(field_name, lang_code) not in db_table_fields:
+            if get_real_columnname(field_name, model, lang_code) not in db_table_fields:
                 yield lang_code
 
     def was_translatable_before(self, field_name, db_table):
@@ -129,7 +137,9 @@ class Command(BaseCommand):
         style = no_style()
         sql_output = []
         db_table = model._meta.db_table
-        was_translatable_before = self.was_translatable_before(field_name, db_table)
+        # Retrieve the actual database column name, since it is different to field_name for a ForeignKey:
+        column = getattr(model, field_name).__doc__
+        was_translatable_before = self.was_translatable_before(column, db_table)
         for lang in missing_langs:
             new_field = get_real_fieldname(field_name, lang)
             f = model._meta.get_field(new_field)
@@ -140,7 +150,7 @@ class Command(BaseCommand):
             if lang == self.default_lang and not was_translatable_before:
                 # data copy from old field (only for default language)
                 sql_output.append("UPDATE %s SET %s = %s" % (qn(db_table), \
-                                  qn(f.column), qn(field_name)))
+                                  qn(f.column), qn(column)))
             if not f.null and lang == self.default_lang:
                 # changing to NOT NULL after having data copied
                 sql_output.append("ALTER TABLE %s ALTER COLUMN %s SET %s" % \
