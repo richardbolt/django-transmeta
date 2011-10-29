@@ -115,6 +115,29 @@ def default_value_setter(field):
 
     return default_value_func_setter
 
+def getlangattr(instance,field,lang):
+    attname = lambda x: get_real_fieldname(field, x)
+    return  getattr(instance, attname(lang),None)
+
+def setlangattr(instance,field,lang,value):
+    attname = lambda x: get_real_fieldname(field, x)
+    setattr(instance, attname(lang),value)
+
+def get_lang_version(instance,field):
+ 
+    attname = lambda x: get_real_fieldname(field, x)
+    def has_attr(lang):
+        return getattr(instance, attname(lang),None)
+    if  has_attr(get_language()):
+        result = get_language()
+    elif has_attr(get_language()[:2]):
+        result = get_language()[:2]
+    elif getattr(instance, attname(settings.LANGUAGE_CODE), None):
+            result = settings.LANGUAGE_CODE
+    else:
+            result = getattr(settings, 'TRANSMETA_DEFAULT_LANGUAGE', 'en')
+    return result
+
 
 class TransMeta(models.base.ModelBase):
     '''
