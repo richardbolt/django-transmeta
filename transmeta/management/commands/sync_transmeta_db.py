@@ -58,7 +58,6 @@ class Command(BaseCommand):
                     help="Assume YES on all queries"),
         make_option('-d', '--default', dest='default_language',
                     help="Language code of your default language"),
-        )
         make_option('-x', '--drop', action='store_true', dest='drop',
                     help="Drop fields only if field wasn't translatable before"),
         )
