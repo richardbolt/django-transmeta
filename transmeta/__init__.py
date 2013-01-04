@@ -167,7 +167,7 @@ class TransMeta(models.base.ModelBase):
                     #                    lang_attr.verbose_name, _(lang_name))
                 attrs[lang_attr_name] = lang_attr
             del attrs[field]
-            attrs[field] = property(default_value(field), doc=original_attr.column) # Set the column to __doc__ so we can access it later.
+            attrs[field] = property(default_value(field))#, doc=original_attr.column) # Set the column to __doc__ so we can access it later.
         new_class = super(TransMeta, cls).__new__(cls, name, bases, attrs)
         if hasattr(new_class, '_meta'):
             new_class._meta.translatable_fields = fields
